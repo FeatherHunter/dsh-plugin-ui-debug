@@ -122,6 +122,26 @@ avail（容器 clientWidth）  vs  nats[]（各折叠档 scrollWidth）  vs  con
 ```
 若 `nats[]` 全部等于 avail 而 `contentReal[]` 明显小于 avail → 判定钳制发生。
 
+### 8. 折叠/收缩类 bug：内容自适应 > 阈值体系（#16 V2 沉淀）
+**坑**：用「视口宽 / 容器宽 < 硬编码阈值」驱动"文字→图标"分级收缩，在 DSH shell 布局
+变化（sidebar/dock 占位、其他插件挤占、字体/语言宽度差）时必然漂移——实测默认 1280
+视口下输入区仅 812px，阈值最低档永不可达，**宽屏默认就缺字**。
+**正解**（仿 #15 渐进式折叠，deck 胶囊 V2 已验证）：
+```
+全展开 → 强制 reflow → 按 data-priority（小=重要=晚收）逐个加折叠 class，
+每加一个 reflow 重测，直到 scrollWidth ≤ clientWidth + 1
+```
+- 触发：ResizeObserver 监听**目标元素自身**宽 + window resize + `document.fonts.ready`
+- 测量期间禁动画 class（如 `dsws-no-anim`），防 max-width transition 污染 scrollWidth
+- 折叠由 React 外部 DOM class 驱动：className prop 不变时 React 重渲染不会抹掉手动 class
+- 每次全展开重算（单帧内完成）→ 天然自愈，无"折叠后展开判定"死锁
+- 验收锚点：给容器写 `dataset.fold = 折叠数`，真机逐档断言
+
+**定位子元素的坑**：组件工厂首参是图标名不是 class（如 `seg('note', ...)`），
+`querySelector('.dsws-seg.note')` 静默返回 null、CSS `.dsws-seg.note` 永不命中——
+用 `:scope > .dsws-seg` 索引定位；CSS 选择器引用不存在的 class 不报错只是永不命中，
+先 grep 确认 class 真实存在再断言行为。
+
 ---
 
 ## 形态专属路径速查
@@ -164,6 +184,10 @@ avail（容器 clientWidth）  vs  nats[]（各折叠档 scrollWidth）  vs  con
 - ❌ 未激活会话就点按钮（仅 A/B 形态）：面板不打开。
 - ❌ `scrollWidth` 当自然宽：被容器钳制，折叠展开判定会死锁。
 - ❌ 把 A 形态路径（激活会话→点可接）硬套到 C 形态（主页面按钮）：多余的激活动作可能误点别处。
+- ❌ 「视口/容器宽 < 阈值」驱动分级收缩（#16 R1-R13）：shell 布局占位使阈值漂移，
+  默认宽屏也可能误收缩、最低档永不可达——用内容自适应（scrollWidth ≤ clientWidth 逐级收）。
+- ❌ 用 `.dsws-seg.<icon名>` 定位/选中 seg（#16 实测）：工厂首参是图标名不是 class，
+  选择器静默落空——用 `:scope > .dsws-seg` 索引。
 
 ## 验收（做完自检）
 - [ ] 先判定目标 UI 形态（A/B/C），路径与形态匹配
