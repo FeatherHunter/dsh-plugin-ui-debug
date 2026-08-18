@@ -113,16 +113,19 @@ avail（容器 clientWidth）  vs  nats[]（各折叠档 scrollWidth）  vs  con
 ```
 若 `nats[]` 全部等于 avail 而 `contentReal[]` 明显小于 avail → 判定钳制发生。
 
-## 原子脚本（固化命令，按需 `node scripts/<x>.mjs` 调用）
+## 原子脚本（固化命令，按需 `node scripts/<x>.mjs` 调用；全部参数化可覆盖）
 
-| 脚本 | 作用 |
-|---|---|
-| `browser-boot.mjs` | 起真实 Chrome → 注入 cfg → 健康检查重试 → 就绪 |
-| `open-panel.mjs` | 激活会话 → 点「可接」→ 面板打开，报 tabs 状态 |
-| `tabs-state.mjs` | 读 tabs 行 DOM（lv/rowH/溢出/每按钮文字可见性） |
-| `drag-step.mjs` | 命中分隔条 + 分段拖拽 30px（方向可参） |
-| `shot.mjs` | 关键帧截图（含元素特写） |
-| `probe-nats.mjs` | sizing-probe：avail/nats/contentReal 三组对照 |
+| 脚本 | 作用 | 状态 |
+|---|---|---|
+| `browser-boot.mjs` | 起真实 Chrome → 注入 cfg → 健康重试 → 激活会话 → 点可接 → 面板就绪 | ✅ 已验证 |
+| `tabs-regression.mjs` | 端到端回归：拖窄→折叠→拖宽→断言文字恢复（PASS/FAIL） | ✅ 真机验证 |
+| `probe-nats.mjs` | sizing-probe：avail/nats/contentReal 三组对照 + 钳制检测 | ✅ 真机验证 |
+| `tabs-state.mjs` | 读 tabs 行 DOM（lv/rowH/溢出/每按钮文字可见性） | ⏳ 规划中 |
+| `drag-step.mjs` | 命中分隔条 + 分段拖拽 30px（方向可参） | ⏳ 规划中 |
+| `shot.mjs` | 关键帧截图（含元素特写） | ⏳ 规划中 |
+
+> **参数约定**（全部可覆盖，勿照抄默认值）：`--url <DSH地址>` `--session <会话标题>` `--cfg <JSON>` `--seg <按钮文字>` `--out <截图目录>` `--tabs <选择器>`
+> 默认值仅作示例（指向 deck 场景）；目标插件不同时必须传参覆盖。
 
 ## 已排除死路（勿重走）
 - ❌ 无头 Chrome：点击不触发 React，交互链路不激活。
