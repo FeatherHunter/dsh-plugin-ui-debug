@@ -1,0 +1,7 @@
+# dsh-plugin-ui-debug bundle 层：插入 UI 调试插件条目。
+# 由 dsh plugin --profile <name> add 自动装配（包声明 dsh.bundle.patch），
+# 无需手动编辑任何文件；dsh plugin remove 时自动移除。
+- insert:
+    - id: dsh-plugin-ui-debug
+      name: '@feather_wch/dsh-plugin-ui-debug'
+      config: {}

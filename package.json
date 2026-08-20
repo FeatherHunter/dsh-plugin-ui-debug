@@ -1,15 +1,23 @@
 {
-  "name": "@dsh-external/dsh-plugin-ui-debug",
-  "version": "0.0.1",
+  "name": "@feather_wch/dsh-plugin-ui-debug",
+  "version": "0.0.2",
   "description": "DSH 插件 UI 调试器：给开发/测试 DSH 插件的 AI 提供真实浏览器驱动（Playwright）+ UI 查看/测试/验证/问题解决闭环工具(ui_shot/ui_drive)（dsh-plugin-ui-debug）",
-  "private": true,
   "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/types/index.d.ts",
   "files": [
-    "lib"
+    "lib",
+    "cordis.patch.yml"
   ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "license": "BSD-3-Clause",
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": ">=0.0.1-rc <2",
     "cordis": ">=4.0.0-rc <5"

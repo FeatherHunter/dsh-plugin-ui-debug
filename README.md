@@ -1,6 +1,36 @@
-# @dsh-external/dsh-plugin-ui-debug
+# @feather_wch/dsh-plugin-ui-debug
 
 **DSH 插件 UI 调试闭环工具** — 给开发/测试 DSH 插件的 AI 提供「真实 Chrome (Playwright) 驱动 + UI 查看/测试/验证/问题解决」全套能力。
+
+## 一条命令完成安装
+
+需要 **DSH CLI**（DeepSeek Harness 命令行工具）。如果还没有，先安装：
+
+```bash
+npm install -g @deepseek-ai/dsh
+```
+
+然后把插件装进你的 profile：
+
+```bash
+dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug
+```
+
+安装即完成，**零配置**：本插件采用 DSH 官方 bundle 机制——包内自带 `cordis.patch.yml`（声明 `dsh.bundle.patch`），`dsh plugin add` 装完后自动把插件加入 profile 的 `dsh.profile.bundles` 层栈，DSH 启动时直接装配；`dsh plugin remove` 卸载时自动移除。全程无需手动编辑任何文件。重启 DSH（或刷新浏览器页面）即生效，插件自动注册 `dsh-plugin-ui-debug` skill 和 `ui_shot` / `ui_drive` 工具。
+
+## 升级
+
+```bash
+dsh plugin --profile web update @feather_wch/dsh-plugin-ui-debug
+```
+
+等价幂等重装：
+
+```bash
+dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug
+```
+
+需要钉回历史版本：`dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug@<版本>`。
 
 > 安装本插件后，**自动注册同名 skill（`dsh-plugin-ui-debug`）**，任何 session 的 AI 在调试 DSH 插件 UI 时都会自动获得这套方法论（激活会话 → hit-test → 分段拖拽 → DOM 断言 → sizing-probe → 犹豫留证），无需任何手工配置。
 
@@ -21,7 +51,7 @@ DSH 插件（面板 / dock / tabs / 弹窗 / 布局 / 交互）的 UI bug，AI �
 
 两个产物在同一源码仓库，随包分发。skill 通过 DSH 原生 runtime skill 注册机制注入，**零文件写入、零本机路径硬编码**，装到任何机器都自动生效。
 
-## 安装
+## 本地开发安装
 
 ```bash
 # 方式 1：本地构建注入（开发期）
@@ -33,8 +63,9 @@ dev_inject_plugin <本目录>
 ```
 
 ```bash
-# 方式 2：GitHub Release 安装
-# 从 Release 下载 dsh-plugin-ui-debug-<version>.tgz，按 DSH 插件安装流程装配
+# 方式 2：本地 tgz 安装（发版前自测 DSH bundle 机制）
+npm pack
+dsh plugin --profile web add ./feather_wch-dsh-plugin-ui-debug-0.0.1.tgz
 ```
 
 ## 构建链说明
@@ -53,7 +84,8 @@ mkdir -p lib/skill && cp src/skill/*.md lib/skill/
 
 ```
 dsh-plugin-ui-debug/
-├── package.json          # @dsh-external/dsh-plugin-ui-debug
+├── package.json          # @feather_wch/dsh-plugin-ui-debug
+├── cordis.patch.yml      # DSH bundle 声明（dsh.bundle.patch）
 ├── src/
 │   ├── index.ts          # 插件入口：注册 ui_shot/ui_drive 工具 + ctx.skills.register()
 │   ├── cdp.ts            # 零依赖 CDP 引擎（Node 22 WebSocket，attach/launch）

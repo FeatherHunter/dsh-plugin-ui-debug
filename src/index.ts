@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url'
 import { join, resolve } from 'node:path'
 import { CdpSession, findChrome } from './cdp.js'
 
-export const name = '@dsh-external/dsh-plugin-ui-debug'
+export const name = '@feather_wch/dsh-plugin-ui-debug'
 export const inject = ['tools', 'skills']
 
 /** 随包携带的 UI 调试 skill 正文（打包后位于 lib/skill/dsh-plugin-ui-debug.md）。 */
@@ -235,7 +235,7 @@ export function apply(ctx: Context): void {
       description: SKILL_DESC,
       content: skillContent(),
       invocation: { modelInvocable: true, userInvocable: true },
-      provider: '@dsh-external/dsh-plugin-ui-debug',
+      provider: '@feather_wch/dsh-plugin-ui-debug',
       source: 'dsh-plugin-ui-debug',
       path: 'src/skill/dsh-plugin-ui-debug.md',
     }), 'dsh-plugin-ui-debug:skill')
