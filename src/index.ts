@@ -72,6 +72,18 @@ function asInt(value: unknown, name: string, fallback: number): number {
   return Math.round(n)
 }
 
+function asBool(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value
+  if (value === undefined) return fallback
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase()
+    if (s === 'true' || s === '1') return true
+    if (s === 'false' || s === '0') return false
+  }
+  if (typeof value === 'number') return value !== 0
+  return fallback
+}
+
 /** ui_drive 的动作校验与执行。 */
 interface DriveAction {
   type: string
@@ -241,7 +253,7 @@ export function apply(ctx: Context): void {
     }), 'dsh-plugin-ui-debug:skill')
   }
 
-  ctx.effect(() => ctx.tools.register(defineTool({
+  ctx.effect(() => (ctx as unknown as { tools: { register(v: unknown): () => void } }).tools.register(defineTool({
     name: 'ui_shot',
     description:
       `截图一个 http/https 页面（默认是运行中的 DSH GUI 自身地址），把 PNG 存到磁盘并返回文件路径。` +
@@ -250,10 +262,12 @@ export function apply(ctx: Context): void {
     parameters: {
       url: { type: 'string', required: true, description: '要截图的页面 URL，如 http://127.0.0.1:59519/ 或任意 http(s) 地址' },
       out: { type: 'string', description: '输出 PNG 文件路径（绝对路径）。缺省自动生成到 ~/.dsh/super-injector/dsh-ui-inspect/shots/' },
-      width: { type: 'integer', description: '视口宽度，默认 1440' },
-      height: { type: 'integer', description: '视口高度，默认 900' },
+      width: { type: 'integer', description: '视口宽度，默认 maximized=true 时 1920，否则 1440；显式传参优先' },
+      height: { type: 'integer', description: '视口高度，默认 maximized=true 时 1080，否则 900；显式传参优先' },
       waitMs: { type: 'integer', description: '加载完成后额外等待（渲染稳定）毫秒，默认 3500' },
       fullPage: { type: 'boolean', description: '是否整页截图（captureBeyondViewport），默认 false' },
+      maximized: { type: 'boolean', description: '是否最大化视口（默认 true → 1920×1080 并锁 DPR=1；设 false 退回 1440×900）' },
+      headless: { type: 'boolean', description: '是否无头（默认 true 虚拟大视口；设 false 切有头物理最大化，等价 SKILL viewport:null）' },
     },
     output: TEXT_OUT,
     timeoutMs: 120_000,
@@ -263,9 +277,15 @@ export function apply(ctx: Context): void {
       const dir = typeof args.out === 'string' && args.out.trim() !== ''
         ? ensureDirForFile(args.out)
         : defaultOutDir()
-      const width = asInt(args.width, 'width', 1440)
-      const height = asInt(args.height, 'height', 900)
-      const session = await CdpSession.open('about:blank', { width, height })
+      const maximized = asBool((args as Record<string, unknown>).maximized, true)
+      const headless = asBool((args as Record<string, unknown>).headless, true)
+      const width = typeof (args as Record<string, unknown>).width === 'number' || typeof (args as Record<string, unknown>).width === 'string'
+        ? asInt((args as Record<string, unknown>).width, 'width', maximized ? 1920 : 1440)
+        : (maximized ? 1920 : 1440)
+      const height = typeof (args as Record<string, unknown>).height === 'number' || typeof (args as Record<string, unknown>).height === 'string'
+        ? asInt((args as Record<string, unknown>).height, 'height', maximized ? 1080 : 900)
+        : (maximized ? 1080 : 900)
+      const session = await CdpSession.open('about:blank', { width, height, maximized, headless })
       try {
         await session.navigate(url)
         await session.waitMs(typeof args.waitMs === 'number' ? args.waitMs : 3500)
@@ -279,7 +299,7 @@ export function apply(ctx: Context): void {
     },
   })), 'dsh-ui-inspect:tools/ui_shot')
 
-  ctx.effect(() => ctx.tools.register(defineTool({
+  ctx.effect(() => (ctx as unknown as { tools: { register(v: unknown): () => void } }).tools.register(defineTool({
     name: 'ui_drive',
     description:
       `在一个无头浏览器会话里按动作脚本驱动页面（导航/点击/输入/按键/滚动/拖拽 + 分步截图 + JS 求值），` +
@@ -305,8 +325,10 @@ export function apply(ctx: Context): void {
           '  drag 的 from/to 各可用 *Selector 或 X/Y 坐标指定；shots=N 表示对前 N 个中间点各截一张图。',
       },
       outDir: { type: 'string', description: '截图输出目录，默认 ~/.dsh/super-injector/dsh-ui-inspect/shots' },
-      width: { type: 'integer', description: '视口宽度，默认 1440' },
-      height: { type: 'integer', description: '视口高度，默认 900' },
+      width: { type: 'integer', description: '视口宽度，默认 maximized=true 时 1920，否则 1440；显式传参优先' },
+      height: { type: 'integer', description: '视口高度，默认 maximized=true 时 1080，否则 900；显式传参优先' },
+      maximized: { type: 'boolean', description: '是否最大化视口（默认 true → 1920×1080 并锁 DPR=1）' },
+      headless: { type: 'boolean', description: '是否无头（默认 true；设 false 切有头物理最大化）' },
     },
     output: TEXT_OUT,
     timeoutMs: 120_000,
@@ -325,9 +347,15 @@ export function apply(ctx: Context): void {
       }
       const outDir = typeof args.outDir === 'string' && args.outDir.trim() !== '' ? args.outDir : defaultOutDir()
       ensureDir(outDir)
-      const width = asInt(args.width, 'width', 1440)
-      const height = asInt(args.height, 'height', 900)
-      const session = await CdpSession.open(url, { width, height })
+      const maximized = asBool((args as Record<string, unknown>).maximized, true)
+      const headless = asBool((args as Record<string, unknown>).headless, true)
+      const width = typeof (args as Record<string, unknown>).width === 'number' || typeof (args as Record<string, unknown>).width === 'string'
+        ? asInt((args as Record<string, unknown>).width, 'width', maximized ? 1920 : 1440)
+        : (maximized ? 1920 : 1440)
+      const height = typeof (args as Record<string, unknown>).height === 'number' || typeof (args as Record<string, unknown>).height === 'string'
+        ? asInt((args as Record<string, unknown>).height, 'height', maximized ? 1080 : 900)
+        : (maximized ? 1080 : 900)
+      const session = await CdpSession.open(url, { width, height, maximized, headless })
       try {
         return await runDrive(session, actions, outDir)
       } finally {

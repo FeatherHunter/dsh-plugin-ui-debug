@@ -5,6 +5,10 @@ export interface LaunchOptions {
     height?: number;
     chromePath?: string;
     userDataDir?: string;
+    /** 默认 true：保持无头以兼容 CI；设 false 切有头物理最大化（SKILL 正解）。 */
+    headless?: boolean;
+    /** 默认 true：缺省视口拉至 1920×1080 并锁 DPR=1；显式 width/height 优先；设 false 尊重小视口。 */
+    maximized?: boolean;
 }
 export interface EvaluateOutcome {
     ok: boolean;
@@ -31,7 +35,7 @@ export declare class CdpSession {
      * the user is actually looking at.
      */
     static attach(port?: number, match?: string | RegExp): Promise<CdpSession>;
-    /** Launch headless Chrome, open a tab at `url`, and attach CDP. */
+    /** Launch Chrome (headless by default), open a tab at `url`, and attach CDP. 默认即最大化矫正。 */
     static open(url: string, opts?: LaunchOptions): Promise<CdpSession>;
     private rejectAll;
     private pollVersion;
