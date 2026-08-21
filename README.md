@@ -1,5 +1,7 @@
 # @feather_wch/dsh-plugin-ui-debug
 
+[![npm version](https://img.shields.io/npm/v/@feather_wch/dsh-plugin-ui-debug?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@feather_wch/dsh-plugin-ui-debug) [![dsh-plugin](https://img.shields.io/badge/topic-dsh--plugin-0052CC?style=flat-square)](https://github.com/topics/dsh-plugin) [![Playwright](https://img.shields.io/badge/Playwright-45ba62?style=flat-square)](https://playwright.dev)
+
 **DSH 插件 UI 调试闭环工具** — 给开发/测试 DSH 插件的 AI 提供「真实 Chrome (Playwright) 驱动 + UI 查看/测试/验证/问题解决」全套能力。
 
 ## 一条命令完成安装
@@ -17,6 +19,14 @@ dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug
 ```
 
 安装即完成，**零配置**：本插件采用 DSH 官方 bundle 机制——包内自带 `cordis.patch.yml`（声明 `dsh.bundle.patch`），`dsh plugin add` 装完后自动把插件加入 profile 的 `dsh.profile.bundles` 层栈，DSH 启动时直接装配；`dsh plugin remove` 卸载时自动移除。全程无需手动编辑任何文件。重启 DSH（或刷新浏览器页面）即生效，插件自动注册 `dsh-plugin-ui-debug` skill 和 `ui_shot` / `ui_drive` 工具。
+
+## 预览
+
+![ui_shot/ui_drive 驱动真实 Chrome — 占位](https://via.placeholder.com/1280x720.png?text=ui_shot+%2B+ui_drive+Preview)
+
+> 实拍：AI 用 `ui_shot` 截图 DSH GUI，用 `ui_drive` 分步拖拽观察中间态 → `view_image` 视觉确认 → 改代码 → 二次 `ui_shot` 验收。GIF/真图待补充，此占位不影响一键安装；完整方法论见 Skill（`dsh-plugin-ui-debug`）中的 sizing-probe / 分段拖拽案例。
+>
+> 本地占位图见 `docs/screenshot-placeholder.png`（已提交文本占位，指向本节链接的示例资源）。
 
 ## 升级
 

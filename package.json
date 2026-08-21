@@ -2,6 +2,16 @@
   "name": "@feather_wch/dsh-plugin-ui-debug",
   "version": "0.0.2",
   "description": "DSH 插件 UI 调试器：给开发/测试 DSH 插件的 AI 提供真实浏览器驱动（Playwright）+ UI 查看/测试/验证/问题解决闭环工具(ui_shot/ui_drive)（dsh-plugin-ui-debug）",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
+    "playwright",
+    "browser-automation",
+    "ui-testing",
+    "debugging",
+    "chrome"
+  ],
   "type": "module",
   "main": "./lib/index.js",
   "types": "./lib/types/index.d.ts",
