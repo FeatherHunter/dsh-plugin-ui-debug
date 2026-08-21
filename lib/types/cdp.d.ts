@@ -9,6 +9,8 @@ export interface LaunchOptions {
     headless?: boolean;
     /** 默认 true：缺省视口拉至 1920×1080 并锁 DPR=1；显式 width/height 优先；设 false 尊重小视口。 */
     maximized?: boolean;
+    /** 默认 false：有头时最小化到任务栏不抢焦点（`windowState:'minimized'` + 伪造 `hasFocus`）；设 true 才前台最大化围观。与 `headless`/`maximized` 正交，`headless:true` 时静默忽略。 */
+    foreground?: boolean;
 }
 export interface EvaluateOutcome {
     ok: boolean;

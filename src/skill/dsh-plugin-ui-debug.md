@@ -50,15 +50,37 @@ DSH 插件的 UI 几乎只出现在**三个位置**，到达路径完全不同�
 
 ## 核心方法论（通用原语，所有形态都适用）
 
-### 0. 启动真实浏览器（铁律）
+### 0. 启动真实浏览器（铁律）— 三轨模型（headless / maximized / foreground 正交）
+
+> **三者正交，缺一不可**：`headless` 管有无 OS 窗口，`maximized` 管视口是否拉满，`foreground` 管是否抢焦点前台。默认即“有头但不抢焦点”。
+
+| 轨道 | 参数组合 | OS 窗口 | 视口（`Emulation`） | 焦点 | 何时用 |
+|------|----------|---------|---------------------|------|--------|
+| **A 默认·静默后台验证** | `headless:false` + `foreground:false` + `maximized:true`（默认） | 有头但 **最小化到任务栏**（`windowState:'minimized'`），不抢 IDE 焦点 | 1920×1080 锁 `DPR=1`（与前台一致） | 自动 `Emulation.setFocusEmulationEnabled:true` 伪造 `hasFocus` | **日常默认**：AI 截图/点击/拖拽/键入与前台等价，但不打断你主工作流 |
+| **B 显式·前台围观** | `headless:false` + `foreground:true` + `maximized:true` | 有头 **最大化到前台**（`windowState:'maximized'` + `bringToFront`） | 同 1920×1080 | 真焦点 | 人想围观 / 录屏演示 / `KEEP=1` 调试时显式开启 |
+| **C 无头·纯截图** | `headless:true`（`foreground` 静默忽略） | 无 OS 窗口 | 虚拟 1920×1080 | HeadlessFocusClient 已处理 | 仅静态截图 / CI 无显示器环境；**拖拽/:hover/React DnD 会降级，勿用于交互** |
+
+**插件侧映射**（`ui_shot` / `ui_drive` 已透出三参）：
+
+```js
+// A 默认（推荐）：静默后台验证，不抢焦点
+await ui_shot({ url: DSH, headless: false, foreground: false, maximized: true })
+// B 围观：显式前台
+await ui_shot({ url: DSH, headless: false, foreground: true, maximized: true })
+// C 纯截图：无头（仅查收视图，无拖拽）
+await ui_shot({ url: DSH, headless: true, maximized: true }) // foreground 忽略
+```
+
+**Playwright 侧映射**（裸 Playwright 时等价本插件的 CdpSession）：
+
 ```js
 chromium.launch({ channel: 'chrome', headless: false, args: ['--start-maximized'], timeout: 60000 })
 const context = await browser.newContext({ viewport: null })
 ```
 - **必须最大化 + `viewport: null`**：窗口小会引发 DSH 布局问题（面板被 dock 挤没、按钮被截）。
-- **绝不用无头**：无头点击不触发 React，交互链路不激活（历史教训）。
-- 跑完自动 `browser.close()`，绝不 `await new Promise(()=>{})` 挂起后台 job；
-  `KEEP=1` 才保留窗口给人围观。
+- **拖拽/hover 场景绝不用 `headless:true`**：无头点击不触发 React，交互链路不激活（历史教训）；仅静态截图才可用 `headless:true`。
+- **默认不抢焦点**：本插件 `foreground:false` 时已最小化并伪造焦点，等价 Playwright 手动 `Browser.setWindowBounds:minimized` + `Emulation.setFocusEmulationEnabled`；`foreground:true` 才前台。
+- 跑完自动 `browser.close()`，绝不 `await new Promise(()=>{})` 挂起后台 job；`KEEP=1` 才保留窗口给人围观。
 
 ### 1. 注入初始化配置（绕开插件的"初始化竞态"）
 很多 DSH 插件根据配置决定渲染形态（如 deck 的 `openIn: sidebar|dock`），且配置计算早于

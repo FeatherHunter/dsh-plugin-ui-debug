@@ -268,6 +268,7 @@ export function apply(ctx: Context): void {
       fullPage: { type: 'boolean', description: '是否整页截图（captureBeyondViewport），默认 false' },
       maximized: { type: 'boolean', description: '是否最大化视口（默认 true → 1920×1080 并锁 DPR=1；设 false 退回 1440×900）' },
       headless: { type: 'boolean', description: '是否无头（默认 true 虚拟大视口；设 false 切有头物理最大化，等价 SKILL viewport:null）' },
+      foreground: { type: 'boolean', description: '是否前台（默认 false 最小化不抢焦点；设 true 最大化至前台围观；headless:true 时静默忽略）' },
     },
     output: TEXT_OUT,
     timeoutMs: 120_000,
@@ -279,13 +280,14 @@ export function apply(ctx: Context): void {
         : defaultOutDir()
       const maximized = asBool((args as Record<string, unknown>).maximized, true)
       const headless = asBool((args as Record<string, unknown>).headless, true)
+      const foreground = asBool((args as Record<string, unknown>).foreground, false)
       const width = typeof (args as Record<string, unknown>).width === 'number' || typeof (args as Record<string, unknown>).width === 'string'
         ? asInt((args as Record<string, unknown>).width, 'width', maximized ? 1920 : 1440)
         : (maximized ? 1920 : 1440)
       const height = typeof (args as Record<string, unknown>).height === 'number' || typeof (args as Record<string, unknown>).height === 'string'
         ? asInt((args as Record<string, unknown>).height, 'height', maximized ? 1080 : 900)
         : (maximized ? 1080 : 900)
-      const session = await CdpSession.open('about:blank', { width, height, maximized, headless })
+      const session = await CdpSession.open('about:blank', { width, height, maximized, headless, foreground })
       try {
         await session.navigate(url)
         await session.waitMs(typeof args.waitMs === 'number' ? args.waitMs : 3500)
@@ -329,6 +331,7 @@ export function apply(ctx: Context): void {
       height: { type: 'integer', description: '视口高度，默认 maximized=true 时 1080，否则 900；显式传参优先' },
       maximized: { type: 'boolean', description: '是否最大化视口（默认 true → 1920×1080 并锁 DPR=1）' },
       headless: { type: 'boolean', description: '是否无头（默认 true；设 false 切有头物理最大化）' },
+      foreground: { type: 'boolean', description: '是否前台（默认 false 最小化不抢焦点；设 true 最大化至前台围观；headless:true 时静默忽略）' },
     },
     output: TEXT_OUT,
     timeoutMs: 120_000,
@@ -349,13 +352,14 @@ export function apply(ctx: Context): void {
       ensureDir(outDir)
       const maximized = asBool((args as Record<string, unknown>).maximized, true)
       const headless = asBool((args as Record<string, unknown>).headless, true)
+      const foreground = asBool((args as Record<string, unknown>).foreground, false)
       const width = typeof (args as Record<string, unknown>).width === 'number' || typeof (args as Record<string, unknown>).width === 'string'
         ? asInt((args as Record<string, unknown>).width, 'width', maximized ? 1920 : 1440)
         : (maximized ? 1920 : 1440)
       const height = typeof (args as Record<string, unknown>).height === 'number' || typeof (args as Record<string, unknown>).height === 'string'
         ? asInt((args as Record<string, unknown>).height, 'height', maximized ? 1080 : 900)
         : (maximized ? 1080 : 900)
-      const session = await CdpSession.open(url, { width, height, maximized, headless })
+      const session = await CdpSession.open(url, { width, height, maximized, headless, foreground })
       try {
         return await runDrive(session, actions, outDir)
       } finally {

@@ -13,6 +13,10 @@
  *  - 唯一可靠视口是 `Emulation.setDeviceMetricsOverride {width,height,deviceScaleFactor:1}`；
  *  - 有头最大化需 `Browser.setWindowBounds {windowState:'maximized'}` + `--start-maximized`，等价 SKILL 的 `viewport:null`；
  *  - 锁 `deviceScaleFactor=1` + `--force-device-scale-factor=1` 消除 Windows 缩放抖动。
+ * 三态正交（#12）：
+ *  - `headless` 有无 OS 窗口、`maximized` 视口是否拉满、`foreground` 是否抢焦点前台，三者正交；
+ *  - 有头默认 `foreground:false` → `windowState:'minimized'` 最小化至任务栏不抢焦点，配合 `Emulation.setFocusEmulationEnabled:true` 伪造 `hasFocus`；
+ *  - `foreground:true` 才 `maximized` 至前台围观；`headless:true` 时 `foreground` 静默忽略。
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
@@ -83,6 +87,8 @@ export interface LaunchOptions {
   headless?: boolean
   /** 默认 true：缺省视口拉至 1920×1080 并锁 DPR=1；显式 width/height 优先；设 false 尊重小视口。 */
   maximized?: boolean
+  /** 默认 false：有头时最小化到任务栏不抢焦点（`windowState:'minimized'` + 伪造 `hasFocus`）；设 true 才前台最大化围观。与 `headless`/`maximized` 正交，`headless:true` 时静默忽略。 */
+  foreground?: boolean
 }
 
 export interface EvaluateOutcome {
@@ -147,6 +153,7 @@ export class CdpSession {
     // 第一性：显式宽高优先；缺省且 maximized=true 时拉至 FullHD（尽可能大），否则回退小值兼容。
     const wantMax = opts.maximized !== false // default true
     const isHeadless = opts.headless !== false // default true（保持无头兼容）
+    const wantForeground = opts.foreground === true // default false：有头但不抢焦点
     const width = opts.width ?? (wantMax ? 1920 : 1440)
     const height = opts.height ?? (wantMax ? 1080 : 900)
     const args = [
@@ -157,11 +164,14 @@ export class CdpSession {
       `--remote-debugging-port=${session.port}`, 'about:blank',
     ]
     if (isHeadless) {
-      // 无头：虚拟大视口，靠 Emulation 保证 innerWidth
+      // 无头：虚拟大视口，靠 Emulation 保证 innerWidth；foreground 静默忽略（无 OS 窗口）
       args.unshift('--headless=new')
     } else {
-      // 有头：物理最大化，等价 SKILL viewport:null
-      args.push('--start-maximized')
+      // 有头：仅当需要前台围观且要求最大化时才加 --start-maximized，避免 foreground:false 时闪现前台
+      if (wantForeground && wantMax) {
+        args.push('--start-maximized')
+      }
+      // foreground:false 最小化分支不加 start-maximized，窗口以 window-size 启动后立即 minimized（视口由 Emulation 保证 1920×1080）
     }
     const child = spawn(chrome, args, { stdio: ['ignore', 'ignore', 'ignore'] })
     session.child = child
@@ -186,22 +196,45 @@ export class CdpSession {
           screenHeight: height,
         })
       } catch { /* ignore — 旧版 Chrome 无 Emulation 亦可降级为 --window-size */ }
-      // 有头且要求最大化：OS 窗口同步最大化（与 Emulation 视口互补）
-      if (!isHeadless && wantMax) {
-        try {
-          // Browser 域无需显式 enable，优先用 targetId 取窗口
-          const win = await session.send('Browser.getWindowForTarget', tab.id ? { targetId: tab.id } as Record<string, unknown> : {})
-          const windowId = (win as { windowId?: number })?.windowId
-          if (typeof windowId === 'number') {
-            await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'maximized' } })
-          } else {
-            // 回退：无参调用（部分 Edge/Chrome 接受）
-            const win2 = await session.send('Browser.getWindowForTarget', {})
-            const wid2 = (win2 as { windowId?: number })?.windowId
-            if (typeof wid2 === 'number') await session.send('Browser.setWindowBounds', { windowId: wid2, bounds: { windowState: 'maximized' } })
+      // 三态解耦：headless / maximized / foreground 正交
+      if (!isHeadless) {
+        if (!wantForeground) {
+          // 默认：有头但不抢焦点 — 最小化到任务栏（`windowState:'minimized'`），视口仍由 Emulation 保证 1920×1080
+          try {
+            const win = await session.send('Browser.getWindowForTarget', tab.id ? { targetId: tab.id } as Record<string, unknown> : {})
+            const windowId = (win as { windowId?: number })?.windowId
+            if (typeof windowId === 'number') {
+              await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } })
+            } else {
+              const win2 = await session.send('Browser.getWindowForTarget', {})
+              const wid2 = (win2 as { windowId?: number })?.windowId
+              if (typeof wid2 === 'number') await session.send('Browser.setWindowBounds', { windowId: wid2, bounds: { windowState: 'minimized' } })
+            }
+          } catch { /* ignore — 权限不足时仍可截图，仅副作用为真 hasFocus=false */ }
+          // 自动伪造焦点：`minimized` 会导致 hasFocus=false/hidden=true，显式伪造避免页面监听误伤（DSH ws 不受影响，但视频/轮询可能误暂停）
+          try {
+            await session.send('Emulation.setFocusEmulationEnabled', { enabled: true })
+          } catch {
+            // 回退：旧版 Chromium 不支持该 experimental 域时，派发 FocusEvent 兜底（不改 hasFocus 返回值，但可骗过监听 focus 的业务代码）
+            try { await session.evaluate(`window.dispatchEvent(new FocusEvent('focus')); document.dispatchEvent(new Event('visibilitychange'))`) } catch { /* ignore */ }
           }
-        } catch { /* ignore — 无头或权限不足时无需 OS 最大化 */ }
+        } else if (wantMax) {
+          // 显式前台围观：最大化至前台（与 Emulation 视口互补）
+          try {
+            const win = await session.send('Browser.getWindowForTarget', tab.id ? { targetId: tab.id } as Record<string, unknown> : {})
+            const windowId = (win as { windowId?: number })?.windowId
+            if (typeof windowId === 'number') {
+              await session.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'maximized' } })
+            } else {
+              const win2 = await session.send('Browser.getWindowForTarget', {})
+              const wid2 = (win2 as { windowId?: number })?.windowId
+              if (typeof wid2 === 'number') await session.send('Browser.setWindowBounds', { windowId: wid2, bounds: { windowState: 'maximized' } })
+            }
+          } catch { /* ignore — 权限不足时无需 OS 最大化 */ }
+        }
+        // foreground:true + maximized:false：窗口以 window-size 启动即前台，无需额外 setWindowBounds
       }
+      // headless:true 时无需窗口状态处理（foreground 静默忽略），也无需伪造焦点（HeadlessFocusClient 已处理，且视口为虚拟）
       await session.waitReady(15000)
       return session
     } catch (e) {
