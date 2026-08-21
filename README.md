@@ -22,11 +22,9 @@ dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug
 
 ## 预览
 
-![ui_shot/ui_drive 驱动真实 Chrome — 占位](https://via.placeholder.com/1280x720.png?text=ui_shot+%2B+ui_drive+Preview)
+![DSH 插件 UI 调试 — 真实浏览器预览](docs/screenshot-placeholder.svg)
 
-> 实拍：AI 用 `ui_shot` 截图 DSH GUI，用 `ui_drive` 分步拖拽观察中间态 → `view_image` 视觉确认 → 改代码 → 二次 `ui_shot` 验收。GIF/真图待补充，此占位不影响一键安装；完整方法论见 Skill（`dsh-plugin-ui-debug`）中的 sizing-probe / 分段拖拽案例。
->
-> 本地占位图见 `docs/screenshot-placeholder.png`（已提交文本占位，指向本节链接的示例资源）。
+> 实拍：AI 在真实 Chrome 中自动看界面、点按钮、拖组件 → 截图对比验证 → 改代码 → 二次验证。GIF/真图待补充，此 SVG 占位确保首屏不裂图且一键安装不受影响；完整方法论见 Skill（`dsh-plugin-ui-debug`）中的 sizing-probe / 分段拖拽案例。
 
 ## 升级
 

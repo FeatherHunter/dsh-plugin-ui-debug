@@ -1,0 +1,11 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <rect width="100%" height="100%" fill="#f6f8fa"/>
+  <rect x="40" y="40" width="1200" height="640" rx="16" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+  <text x="640" y="300" font-family="Segoe UI, sans-serif" font-size="42" font-weight="600" text-anchor="middle" fill="#24292f">DSH 插件 UI 调试 — 真实浏览器预览</text>
+  <text x="640" y="360" font-family="Segoe UI, sans-serif" font-size="24" text-anchor="middle" fill="#57606a">AI 自动看界面 · 点按钮 · 拖组件 · 验结果</text>
+  <text x="640" y="410" font-family="Segoe UI, sans-serif" font-size="18" text-anchor="middle" fill="#8c959f">占位图 · 实拍 GIF/截图待补充 · 一键安装零配置</text>
+  <g transform="translate(560,460)">
+    <rect width="160" height="48" rx="24" fill="#0969da"/>
+    <text x="80" y="31" font-family="Segoe UI, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#ffffff">via ui_shot</text>
+  </g>
+</svg>
