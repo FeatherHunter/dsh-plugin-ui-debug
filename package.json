@@ -1,6 +1,6 @@
 {
   "name": "@feather_wch/dsh-plugin-ui-debug",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "DSH 插件 UI 调试神器：让 AI 在真实 Chrome（Playwright）中自动看界面、点按钮、拖组件，一键安装零配置",
   "keywords": [
     "dsh-plugin",
