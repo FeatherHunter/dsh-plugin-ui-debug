@@ -22,9 +22,25 @@ dsh plugin --profile web add @feather_wch/dsh-plugin-ui-debug
 
 ## 预览
 
-![DSH 插件 UI 调试 — 真实浏览器预览](docs/screenshot-placeholder.svg)
+![DSH 插件 UI 调试 8s 闭环 — 真实 Chrome 看界面·点按钮·分段拖拽·改代码·二次验证](docs/demo-closed-loop.gif)
 
-> 实拍：AI 在真实 Chrome 中自动看界面、点按钮、拖组件 → 截图对比验证 → 改代码 → 二次验证。GIF/真图待补充，此 SVG 占位确保首屏不裂图且一键安装不受影响；完整方法论见 Skill（`dsh-plugin-ui-debug`）中的 sizing-probe / 分段拖拽案例。
+> 真实 Chrome 静默后台验证 · 不抢 IDE 焦点 · 分段拖拽闭环可验 — 基于 Playwright CDP · 三轨模型 headless/maximized/foreground 正交
+>
+> 动图 ≥8s 或加载失败时，回退看 [首帧静态图](docs/demo-closed-loop-poster.png)
+
+### 分段拖拽护城河
+
+![分段拖拽三帧拼图 — 每段≤30px 重新建立输入上下文，破解折叠死锁](docs/screenshot-p2-drag-steps.png)
+
+> 分段拖拽三帧拼图 — 每段 ≤30px 重建输入上下文，破解折叠死锁直观可验 · `ui_drive drag steps:5 shots:3`
+
+### 有头最小化不抢焦点
+
+![有头最小化不抢焦点 — foreground:false 时 IDE 仍前台，截图 1280×720 清晰](docs/screenshot-p1-minimized.png)
+
+### 改一行再验一次
+
+![改前改后对比 — scrollWidth vs clientWidth 数值对比，data-fold 逐级折叠至不溢出](docs/screenshot-p3-before-after.png)
 
 ## 升级
 
